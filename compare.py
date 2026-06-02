@@ -8,7 +8,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from params import *
+import params as pm
+from datetime import datetime, timezone
+import os
+import inspect      # Для сохранения J и N_i
+import shutil       # Для сохранения params
 
 # ══════════════════════════════════════════════════════════════════════
 # 1. Решение TCL2
@@ -34,14 +38,36 @@ pur_heom = np.array(heom.purity)
 print("\nРасчёты завершены. Строю графики...")
 
 # ══════════════════════════════════════════════════════════════════════
-# 3. Графики: наложение (окно 1)
+# 3. Создание папок
+# ══════════════════════════════════════════════════════════════════════
+
+with open(".env", "r") as f:
+    file_path = f.readline().strip().split(": ", maxsplit=1)[-1]
+
+time_stamp = datetime.now(timezone.utc).isoformat().replace(":", "-")
+file_type = "compare"
+file_path = os.path.join(file_path, file_type, time_stamp)
+os.makedirs(file_path, exist_ok=True)
+
+# Не нужно, так как в HEOM J и N_I имеют один вид всегда
+# # Save of functions
+# with open(os.path.join(file_path, "functions.txt"), "w") as f:
+#     f.write(inspect.getsource(J))
+#     f.write("\n\n")
+#     f.write(inspect.getsource(N_I))
+
+# Save params
+shutil.copy("params.py", os.path.join(file_path, "params.py"))
+
+# ══════════════════════════════════════════════════════════════════════
+# 4. Графики: наложение (окно 1)
 # ══════════════════════════════════════════════════════════════════════
 
 fig1, axes1 = plt.subplots(2, 3, figsize=(15, 10))
 fig1.suptitle(
-    f"TCL2 vs HEOM  |  $\\Lambda={LAMBDA}$, $\\lambda_s={lambda_s}$, "
-    f"$\\gamma={GAMMA}$, $T={TEMP}$\n"
-    f"$\\lambda_{{heom}}=\\Lambda^2\\lambda_s={LAMBDA**2*lambda_s:.4f}$",
+    f"TCL2 vs HEOM  |  $\\Lambda={pm.LAMBDA}$, $\\lambda_s={pm.lambda_s}$, "
+    f"$\\gamma={pm.GAMMA}$, $T={pm.TEMP}$\n"
+    f"$\\lambda_{{heom}}=\\Lambda^2\\lambda_s={pm.LAMBDA**2*pm.lambda_s:.4f}$",
     fontsize=13
 )
 
@@ -75,7 +101,7 @@ axes1[1, 1].set_title("Длина вектора Блоха")
 axes1[1, 1].legend(fontsize=7); axes1[1, 1].grid(alpha=0.3)
 
 w_pl = np.linspace(0.01, 10, 500)
-J_full = LAMBDA**2 * lambda_s * GAMMA * w_pl / (w_pl**2 + GAMMA**2)
+J_full = pm.LAMBDA**2 * pm.lambda_s * pm.GAMMA * w_pl / (w_pl**2 + pm.GAMMA**2)
 axes1[1, 2].plot(w_pl, J_full, color="C5", lw=2)
 axes1[1, 2].set_xlabel(r"$\omega$"); axes1[1, 2].set_ylabel(r"$J_{full}(\omega)$")
 axes1[1, 2].set_title(r"$J_{full}=\Lambda^2 J(\omega)$"); axes1[1, 2].grid(alpha=0.3)
@@ -96,7 +122,7 @@ delta_pur = pur_tcl - pur_heom
 
 fig2, axes2 = plt.subplots(2, 2, figsize=(14, 8))
 fig2.suptitle(
-    f"Разность TCL2 − HEOM  |  $\\Lambda={LAMBDA}$, $\\lambda_s={lambda_s}$",
+    f"Разность TCL2 − HEOM  |  $\\Lambda={pm.LAMBDA}$, $\\lambda_s={pm.lambda_s}$",
     fontsize=13
 )
 
@@ -124,16 +150,16 @@ axes2[1, 0].grid(alpha=0.3)
 axes2[1, 1].axis("off")
 stats = (
     f"Параметры:\n"
-    f"  LAMBDA = {LAMBDA},  lambda_s = {lambda_s}\n"
-    f"  lam_heom = {LAMBDA**2*lambda_s:.6f}\n"
-    f"  GAMMA = {GAMMA},  T = {TEMP}\n\n"
+    f"  LAMBDA = {pm.LAMBDA},  lambda_s = {pm.lambda_s}\n"
+    f"  lam_heom = {pm.LAMBDA**2*pm.lambda_s:.6f}\n"
+    f"  GAMMA = {pm.GAMMA},  T = {pm.TEMP}\n\n"
     f"Макс. отклонения:\n"
     f"  max|d<sx>| = {np.max(np.abs(delta_sx)):.6f}\n"
     f"  max|d<sy>| = {np.max(np.abs(delta_sy)):.6f}\n"
     f"  max|d<sz>| = {np.max(np.abs(delta_sz)):.6f}\n"
     f"  max|d<s>|  = {np.max(delta_norm):.6f}\n"
     f"  max|dPur|  = {np.max(np.abs(delta_pur)):.6f}\n\n"
-    f"Финал (t={T_MAX}):\n"
+    f"Финал (t={pm.T_MAX}):\n"
     f"  <sz>_TCL2 = {sz_tcl[-1]:+.6f}\n"
     f"  <sz>_HEOM = {sz_heom[-1]:+.6f}\n"
     f"  Pur_TCL2  = {pur_tcl[-1]:.6f}\n"
