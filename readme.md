@@ -22,29 +22,29 @@
 
 **Система**: двухуровневая система (кубит) с гамильтонианом
 
-\[
+$$
 H_S = -\frac{\Delta}{2}\,\sigma_x + \frac{h}{2}\,\sigma_z
-\]
+$$
 
 **Окружение**: бозонное поле, описываемое спектральной плотностью
 
-\[
+$$
 J(\omega) = \lambda_s \,\frac{\gamma\,\omega}{\omega^2 + \gamma^2}
-\]
+$$
 
 Полная связь система+окружение имеет вид \( H_{int} = \sigma_z \otimes \sum_k g_k (a_k + a_k^\dagger) \).  
 В TCL2 константа связи масштабируется дополнительным фактором \(\Lambda\):
 
-\[
+$$
 \lambda_{\text{TCL2}} = \Lambda^2 \lambda_s
-\]
+$$
 
 (позволяет исследовать область слабой связи, где TCL2 должен работать хорошо).
 
 **Наблюдаемые**:
 
-- средние значения \(\langle\sigma_x\rangle,\langle\sigma_y\rangle,\langle\sigma_z\rangle\);
-- чистота редуцированного состояния \(\operatorname{Tr}(\rho_S^2)\);
+- средние значения $\(\langle\sigma_x\rangle,\langle\sigma_y\rangle,\langle\sigma_z\rangle\)$;
+- чистота редуцированного состояния $\(\operatorname{Tr}(\rho_S^2)\)$;
 - длина вектора Блоха.
 
 ## Структура проекта
