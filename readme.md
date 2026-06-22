@@ -32,8 +32,8 @@ $$
 J(\omega) = \lambda_s \,\frac{\gamma\,\omega}{\omega^2 + \gamma^2}
 $$
 
-Полная связь система+окружение имеет вид \( H_{int} = \sigma_z \otimes \sum_k g_k (a_k + a_k^\dagger) \).  
-В TCL2 константа связи масштабируется дополнительным фактором \(\Lambda\):
+Полная связь система+окружение имеет вид $ H_{int} = \sigma_z \otimes \sum_k g_k (a_k + a_k^\dagger) $.  
+В TCL2 константа связи масштабируется дополнительным фактором $\Lambda$:
 
 $$
 \lambda_{\text{TCL2}} = \Lambda^2 \lambda_s
