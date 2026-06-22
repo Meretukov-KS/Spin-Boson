@@ -121,7 +121,7 @@ elif MODE == "compare":
         """Спектральная плотность, совместимая с HEOM (лоренцевская).
         LAMBDA^2 не включается — он уже учтён внутри TCL2-ядра через rh_lambda.
         """
-        return pm.lambda_s * pm.GAMMA * omega / (omega ** 2 + pm.GAMMA ** 2)
+        return 2 * pm.lambda_s * pm.GAMMA * omega / (omega ** 2 + pm.GAMMA ** 2)
 
     def N_I_heom_compat(omega):
         """Тепловое распределение Бозе-Эйнштейна (как в HEOM)."""

@@ -67,26 +67,26 @@ def to_shrodinger(rho_int: np.ndarray, t: float) -> np.ndarray:
 
 # Функция спектральной плотности
 def J(omega: float, t: float = 0.0) -> float:
-    k_shift     = 5 * pm.k + 1/2 * t
-    w_shift     = pm.w0 + 0.2 * np.sin(sqrt_Omega * t)
+    k_shift     = pm.k
+    w_shift     = pm.w0
     g_shift     = pm.g
-    eta_shift   = 2 * pm.eta + 1/5 * t
+    eta_shift   = pm.eta
     wc_shift    = pm.w0
     s_shift     = pm.s
-    ohmic = eta_shift * (omega ** s_shift) * (wc_shift ** (1 - s_shift)) * np.exp(-omega / wc_shift)
-    lorentz = g_shift ** 2 / np.pi * (k_shift) / ((omega - w_shift) ** 2 + (k_shift) **2)
-    return ohmic + lorentz
+    ohmic       = eta_shift * (omega ** s_shift) * (wc_shift ** (1 - s_shift)) * np.exp(-omega / wc_shift)
+    lorentz     = g_shift ** 2 / np.pi * (k_shift) / ((omega - w_shift) ** 2 + (k_shift) **2)
+    return (ohmic + lorentz) * (1 + pm.A * np.cos([pm.Omega * t]))
 
 
 # Начальное распределение для среды (тепловое распределение)
 def N_I(omega: float) -> float:
-    return 0
-    # if pm.TEMP == 0:
-    #     return 0.0
-    # x = omega / pm.TEMP
-    # if x > 700:  # избегаем переполнения экспоненты
-    #     return 0.0
-    # return 1.0 / (np.exp(x) - 1.0)
+    # return 0
+    if pm.TEMP == 0:
+        return 0.0
+    x = omega / pm.TEMP
+    if x > 700:  # избегаем переполнения экспоненты
+        return 0.0
+    return 1.0 / (np.exp(x) - 1.0)# + pm.Delta_N * np.exp(-(omega - sqrt_Omega) ** 2 / pm.sigma ** 2)
 
 # Начальное состояние спина (двухуровневой системы)
 pauli_i = np.array(pm.PAULI_I) / np.linalg.norm(pm.PAULI_I)     # нормируем вектор средних спинов
@@ -181,14 +181,14 @@ S_arr = np.array([S(t) for t in t_arr])
 rh_labmda = pm.LAMBDA   # Отдельная переменная для лямбды
 @nb.njit(cache=True, parallel=True)
 def _rhssg_kernel(St: np.ndarray, St1_arr: np.ndarray, Ct_arr: np.ndarray,
-                  rho: np.ndarray, t1_arr: np.ndarray) -> np.ndarray:
+                  rho: np.ndarray, t1_arr: np.ndarray, lam2: float) -> np.ndarray:
     n = len(t1_arr)
     integrand = np.zeros((n, 4), dtype=np.complex128)
     # Параллельный цикл по истории — каждая итерация пишет в свою строку
     for i in nb.prange(n):
         comm1 = St @ St1_arr[i] @ rho - St1_arr[i] @ rho @ St
         comm2 = St @ rho @ St1_arr[i] - rho @ St1_arr[i] @ St
-        m = -rh_labmda ** 2 * (Ct_arr[i] * comm1 - np.conj(Ct_arr[i]) * comm2)
+        m = -lam2 * (Ct_arr[i] * comm1 - np.conj(Ct_arr[i]) * comm2)
         integrand[i] = m.ravel()
     result = np.zeros(4, dtype=np.complex128)
     for j in range(4):
@@ -347,12 +347,13 @@ def trbdf2_rho_step(rho: np.ndarray, step: int, dt: float, N_vec: np.ndarray) ->
     St1_mid     = np.concatenate([St1_arr_cur, St1.reshape(1, 2, 2)], axis=0)
     St1_end     = np.concatenate([St1_mid,     St2.reshape(1, 2, 2)], axis=0)
 
-    F_cur = _rhssg_kernel(St, St1_arr_cur, Ct_curr, rho, t1_arr_cur)
+    _lam2_sg = rh_labmda ** 2
+    F_cur = _rhssg_kernel(St, St1_arr_cur, Ct_curr, rho, t1_arr_cur, _lam2_sg)
 
     # --- Стадия 1: трапеция до t + γ·dt ---
     rho1 = rho + g * dt * F_cur
     for _ in range(MAX_ITER):
-        F_mid    = _rhssg_kernel(St1, St1_mid, Ct_mid, rho1, t1_mid)
+        F_mid    = _rhssg_kernel(St1, St1_mid, Ct_mid, rho1, t1_mid, _lam2_sg)
         rho1_new = normal_rho(rho + (g * dt / 2) * (F_cur + F_mid))
         if np.linalg.norm(rho1_new - rho1) < TOL:
             rho1 = rho1_new
@@ -366,7 +367,7 @@ def trbdf2_rho_step(rho: np.ndarray, step: int, dt: float, N_vec: np.ndarray) ->
 
     rho_new = normal_rho(a1 * rho1 - a2 * rho)
     for _ in range(MAX_ITER):
-        F_end        = _rhssg_kernel(St2, St1_end, Ct_end, rho_new, t1_end)
+        F_end        = _rhssg_kernel(St2, St1_end, Ct_end, rho_new, t1_end, _lam2_sg)
         rho_new_next = normal_rho(a1 * rho1 - a2 * rho + a3 * F_end)
         if np.linalg.norm(rho_new_next - rho_new) < TOL:
             rho_new  = rho_new_next
@@ -647,7 +648,7 @@ if __name__ == "__main__":
     os.makedirs(file_path, exist_ok=True)
 
     # Save of functions
-    with open(os.path.join(file_path, "functions.txt"), "w") as f:
+    with open(os.path.join(file_path, "functions.txt"), "w", encoding="utf-8") as f:
         f.write(inspect.getsource(J))
         f.write("\n\n")
         f.write(inspect.getsource(N_I))
