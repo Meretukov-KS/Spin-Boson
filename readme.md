@@ -43,8 +43,8 @@ $$
 
 **Наблюдаемые**:
 
-- средние значения $\(\langle\sigma_x\rangle,\langle\sigma_y\rangle,\langle\sigma_z\rangle\)$;
-- чистота редуцированного состояния $\(\operatorname{Tr}(\rho_S^2)\)$;
+- средние значения $\langle\sigma_x\rangle,\langle\sigma_y\rangle,\langle\sigma_z\rangle$;
+- чистота редуцированного состояния $\operatorname{Tr}(\rho_S^2)$;
 - длина вектора Блоха.
 
 ## Структура проекта
